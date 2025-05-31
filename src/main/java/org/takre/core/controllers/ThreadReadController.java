@@ -24,6 +24,7 @@ public class ThreadReadController extends Thread {
                 String mensaje = in.readUTF();
                 if (mensaje.startsWith("USERS:")) {
                     String[] usuarios = mensaje.substring(6).split(",");
+
                     panel.updateUserList(usuarios);  // <- tú implementas esta función
                 } else {
                     panel.receiveMessage(mensaje);

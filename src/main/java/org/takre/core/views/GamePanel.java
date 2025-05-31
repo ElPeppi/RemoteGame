@@ -3,6 +3,7 @@ package org.takre.core.views;
 import org.takre.core.controllers.KeyControllers.KeyHandler;
 import org.takre.core.controllers.ThreadReadController;
 import org.takre.core.models.entity.Player;
+import org.takre.core.models.entity.RemotePlayer;
 
 import javax.swing.*;
 import java.awt.*;
@@ -10,6 +11,8 @@ import java.io.DataOutputStream;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 public class GamePanel extends JPanel implements Runnable {
     // Configuración de pantalla
@@ -41,6 +44,8 @@ public class GamePanel extends JPanel implements Runnable {
 
     // Lista de usuarios conectados
     private java.util.List<String> usuariosConectados = new ArrayList<>();
+    private Map<String, RemotePlayer> jugadoresRemotos = new HashMap<>();
+
 
     // Constructor
     public GamePanel(String ip, int port, String userName) {
@@ -106,9 +111,22 @@ public class GamePanel extends JPanel implements Runnable {
         }
     }
 
-    // Actualización del jugador (juego)
+    // Actualización del juego
     public void update() {
         player.update();
+
+        // Enviar posición del jugador al servidor
+        if (out != null) {
+            try {
+                int x = player.x;
+                int y = player.y;
+
+                String mensaje = "PLAYER:" + userName + "," + x + "," + y;
+                out.writeUTF(mensaje);
+            } catch (Exception e) {
+                System.out.println("Error al enviar datos del jugador: " + e.getMessage());
+            }
+        }
     }
 
     // Dibujo del juego + usuarios conectados
@@ -117,6 +135,11 @@ public class GamePanel extends JPanel implements Runnable {
         Graphics2D g2 = (Graphics2D) g;
 
         player.draw(g2);
+
+        for (RemotePlayer rp : jugadoresRemotos.values()) {
+            rp.draw(g2);
+        }
+
 
         // Dibuja la lista de usuarios conectados en la esquina
         int y = 20;
@@ -134,12 +157,37 @@ public class GamePanel extends JPanel implements Runnable {
     public void updateUserList(String[] usuarios) {
         usuariosConectados.clear();
         usuariosConectados.addAll(Arrays.asList(usuarios));
+
+        jugadoresRemotos.keySet().removeIf(nombre -> !usuariosConectados.contains(nombre));
+
         repaint();
     }
 
     // Recibe mensajes del servidor que no sean lista de usuarios
     public void receiveMessage(String mensaje) {
-        System.out.println("Mensaje recibido: " + mensaje);
-        // Aquí podrías agregarlo a un chat o mostrarlo en pantalla
+        if (mensaje.startsWith("PLAYER:")) {
+            String[] partes = mensaje.substring(7).split(",");
+            if (partes.length == 3) {
+                String nombre = partes[0];
+                int x = Integer.parseInt(partes[1]);
+                int y = Integer.parseInt(partes[2]);
+
+                if (!nombre.equals(userName)) {
+                    RemotePlayer rp = jugadoresRemotos.get(nombre);
+                    if (rp == null) {
+                        rp = new RemotePlayer(nombre, x, y);
+                        jugadoresRemotos.put(nombre, rp);
+                    } else {
+                        rp.updatePosition(x, y);
+                    }
+                }
+            }
+        }
+
+    }
+
+    // Método opcional si estás usando resize del JFrame
+    public void resize(int newWidth, int newHeight) {
+        // Por ahora no cambia tamaño interno, pero podrías escalar aquí
     }
 }
