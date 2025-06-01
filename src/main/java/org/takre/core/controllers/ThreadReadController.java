@@ -19,19 +19,21 @@ public class ThreadReadController extends Thread {
     }
 
     public void run() {
-        try {
-            while (true) {
-                String mensaje = in.readUTF();
-                if (mensaje.startsWith("USERS:")) {
-                    String[] usuarios = mensaje.substring(6).split(",");
+    try {
+        while (true) {
+            String mensaje = in.readUTF();
+            if (mensaje == null) break;
 
-                    panel.updateUserList(usuarios);  // <- tú implementas esta función
-                } else {
-                    panel.receiveMessage(mensaje);
-                }
+            if (mensaje.startsWith("USERS:")) {
+                String[] usuarios = mensaje.substring(6).split(",");
+                panel.updateUserList(usuarios);
+            } else {
+                panel.receiveMessage(mensaje);
             }
-        } catch (IOException e) {
-            System.out.println("Desconectado del servidor.");
         }
+    } catch (IOException e) {
+        System.out.println("Desconectado del servidor: " + e.getMessage());
     }
+}
+
 }

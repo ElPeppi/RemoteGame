@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class GamePanel extends JPanel implements Runnable {
+
     // Configuración de pantalla
     final int originalTileSize = 32;
     final int scale = 2;
@@ -46,7 +47,6 @@ public class GamePanel extends JPanel implements Runnable {
     private java.util.List<String> usuariosConectados = new ArrayList<>();
     private Map<String, RemotePlayer> jugadoresRemotos = new HashMap<>();
 
-
     // Constructor
     public GamePanel(String ip, int port, String userName) {
         this.userName = userName;
@@ -65,6 +65,8 @@ public class GamePanel extends JPanel implements Runnable {
     private void connectToServer(String ip, int port) {
         try {
             Socket socket = new Socket(ip, port);
+            socket.setSendBufferSize(262144);
+            socket.setReceiveBufferSize(262144);
             this.out = new DataOutputStream(socket.getOutputStream());
 
             // Enviar nombre de usuario al servidor
@@ -121,7 +123,7 @@ public class GamePanel extends JPanel implements Runnable {
                 int x = player.x;
                 int y = player.y;
                 String direction = player.direction;
-                String mensaje = "PLAYER:" + userName + "," + x + "," + y + ","+direction;
+                String mensaje = "PLAYER:" + userName + "," + x + "," + y + "," + direction;
                 out.writeUTF(mensaje);
             } catch (Exception e) {
                 System.out.println("Error al enviar datos del jugador: " + e.getMessage());
@@ -140,7 +142,6 @@ public class GamePanel extends JPanel implements Runnable {
             rp.draw(g2);
         }
 
-
         // Dibuja la lista de usuarios conectados en la esquina
         int y = 20;
         g2.setColor(Color.WHITE);
@@ -155,31 +156,48 @@ public class GamePanel extends JPanel implements Runnable {
 
     // Actualiza la lista de usuarios conectados
     public void updateUserList(String[] usuarios) {
+        boolean huboCambio = false;
         usuariosConectados.clear();
         usuariosConectados.addAll(Arrays.asList(usuarios));
 
-        jugadoresRemotos.keySet().removeIf(nombre -> !usuariosConectados.contains(nombre));
+        // Elimina jugadores desconectados
+        if (jugadoresRemotos.keySet().removeIf(nombre -> !usuariosConectados.contains(nombre))) {
+            huboCambio = true;
+        }
 
-        repaint();
+        if (huboCambio) {
+            repaint();
+        }
     }
 
     // Recibe mensajes del servidor que no sean lista de usuarios
     public void receiveMessage(String mensaje) {
         if (mensaje.startsWith("PLAYER:")) {
-            String[] partes = mensaje.substring(7).split(",");
-            if (partes.length == 4) {
-                String nombre = partes[0];
-                int x = Integer.parseInt(partes[1]);
-                int y = Integer.parseInt(partes[2]);
-                String direccion = partes[3];
+            mensaje = mensaje.substring(7);
+
+            for (String entry : mensaje.split("\\|")) {
+                String[] datos = entry.split(",");
+                if (datos.length != 4) {
+                    continue; // Evita errores
+                }
+                String nombre = datos[0];
+                int x, y;
+                try {
+                    x = Integer.parseInt(datos[1]);
+                    y = Integer.parseInt(datos[2]);
+                } catch (NumberFormatException e) {
+                    continue; // datos inválidos
+                }
+                String dir = datos[3];
+
                 if (!nombre.equals(userName)) {
-                    RemotePlayer rp = jugadoresRemotos.get(nombre);
-                    if (rp == null) {
-                        rp = new RemotePlayer(nombre, x, y,direccion,this);
-                        jugadoresRemotos.put(nombre, rp);
-                    } else {
-                        rp.updatePlayer(x, y,direccion);
-                    }
+                    jugadoresRemotos.compute(nombre, (k, rp) -> {
+                        if (rp == null) {
+                            return new RemotePlayer(nombre, x, y, dir, this);
+                        }
+                        rp.updatePlayer(x, y, dir);
+                        return rp;
+                    });
                 }
             }
         }
