@@ -120,8 +120,8 @@ public class GamePanel extends JPanel implements Runnable {
             try {
                 int x = player.x;
                 int y = player.y;
-
-                String mensaje = "PLAYER:" + userName + "," + x + "," + y;
+                String direction = player.direction;
+                String mensaje = "PLAYER:" + userName + "," + x + "," + y + ","+direction;
                 out.writeUTF(mensaje);
             } catch (Exception e) {
                 System.out.println("Error al enviar datos del jugador: " + e.getMessage());
@@ -167,18 +167,18 @@ public class GamePanel extends JPanel implements Runnable {
     public void receiveMessage(String mensaje) {
         if (mensaje.startsWith("PLAYER:")) {
             String[] partes = mensaje.substring(7).split(",");
-            if (partes.length == 3) {
+            if (partes.length == 4) {
                 String nombre = partes[0];
                 int x = Integer.parseInt(partes[1]);
                 int y = Integer.parseInt(partes[2]);
-
+                String direccion = partes[3];
                 if (!nombre.equals(userName)) {
                     RemotePlayer rp = jugadoresRemotos.get(nombre);
                     if (rp == null) {
-                        rp = new RemotePlayer(nombre, x, y);
+                        rp = new RemotePlayer(nombre, x, y,direccion,this);
                         jugadoresRemotos.put(nombre, rp);
                     } else {
-                        rp.updatePosition(x, y);
+                        rp.updatePlayer(x, y,direccion);
                     }
                 }
             }

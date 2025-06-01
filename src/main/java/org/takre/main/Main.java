@@ -1,5 +1,6 @@
 package org.takre.main;
 
+import org.takre.core.views.CharacterCreator;
 import org.takre.core.views.GamePanel;
 
 import javax.swing.*;
@@ -18,7 +19,9 @@ public class Main {
             window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             //window.setResizable(false);
             window.setTitle("Todavia no se");
+            //CharacterCreator characterCreator = new CharacterCreator();
 
+            //characterCreator.setVisible(true);
             GamePanel gamePanel = new GamePanel(ip, port, userName);
             window.add(gamePanel);
             window.addComponentListener(new java.awt.event.ComponentAdapter() {
