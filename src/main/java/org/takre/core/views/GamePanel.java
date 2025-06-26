@@ -34,10 +34,22 @@ public class GamePanel extends JPanel implements Runnable {
 
     // Entrada de teclado y jugador
     KeyHandler keyH = new KeyHandler();
-    Player player = new Player(this, keyH);
+
+    public KeyHandler getKeyH() {
+        return keyH;
+    }
+    Player player ;
+
+    public void setPlayer(Player player) {
+        this.player = player;
+    }
 
     // Red
     private String userName;
+
+    public String getUserName() {
+        return userName;
+    }
     private DataOutputStream out;
 
     // Hilo de juego
@@ -118,15 +130,17 @@ public class GamePanel extends JPanel implements Runnable {
         player.update();
 
         // Enviar posición del jugador al servidor
-        if (out != null) {
-            try {
-                int x = player.x;
-                int y = player.y;
-                String direction = player.direction;
-                String mensaje = "PLAYER:" + userName + "," + x + "," + y + "," + direction;
-                out.writeUTF(mensaje);
-            } catch (Exception e) {
-                System.out.println("Error al enviar datos del jugador: " + e.getMessage());
+        if (player.hasStateChanged()){
+            if (out != null) {
+                try {
+                    int x = player.x;
+                    int y = player.y;
+                    String direction = player.direction;
+                    String mensaje = "PLAYER:" + userName + "," + x + "," + y + "," + direction;
+                    out.writeUTF(mensaje);
+                } catch (Exception e) {
+                    System.out.println("Error al enviar datos del jugador: " + e.getMessage());
+                }
             }
         }
     }
@@ -165,9 +179,6 @@ public class GamePanel extends JPanel implements Runnable {
             huboCambio = true;
         }
 
-        if (huboCambio) {
-            repaint();
-        }
     }
 
     // Recibe mensajes del servidor que no sean lista de usuarios

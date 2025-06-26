@@ -9,6 +9,7 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 
 public class RemotePlayer extends Entity {
+
     public String username;
     public int x, y;
     private GamePanel gp;
@@ -102,5 +103,13 @@ public class RemotePlayer extends Entity {
         FontMetrics fm = g2.getFontMetrics();
         int textWidth = fm.stringWidth(username);
         g2.drawString(username, x + (gp.tileSizeX / 2) - (textWidth / 2), y - 5);
+    }
+
+    public void setX(int x) {
+        this.x = x;
+    }
+
+    public void setY(int y) {
+        this.y = y;
     }
 }
