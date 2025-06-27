@@ -27,9 +27,10 @@ public class Main {
             //CharacterCreator characterCreator = new CharacterCreator();
 
             //characterCreator.setVisible(true);
-            GamePanel gamePanel = new GamePanel(ip, port, userName);
+            GamePanel gamePanel = new GamePanel(userName);
             WebSocketClient clienteWS = new WebSocketClient(userName, gamePanel);
             Player jugador = new Player(gamePanel, gamePanel.getKeyH(), clienteWS);
+            gamePanel.setWebSocketClient(clienteWS);
             gamePanel.setPlayer(jugador);
 
             window.add(gamePanel);
