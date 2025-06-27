@@ -18,7 +18,6 @@ public class Player extends Entity {
     String pack = "player", name = "pp_sheet.png";
     private int lastX = -1, lastY = -1;
     private String lastDirection = "";
-    
 
     public Player(GamePanel gp, KeyHandler keyH, WebSocketClient clienteWS) {
 
@@ -91,9 +90,6 @@ public class Player extends Entity {
                 x += speed;
                 direction = "right";
             }
-            if (hasStateChanged() && this.clienteWS != null) {
-                clienteWS.enviar("PLAYER:" + gp.getUserName() + "," + x + "," + y + "," + direction);
-            }
             updateLastState();
 
             spriteCounter++;
@@ -123,6 +119,10 @@ public class Player extends Entity {
 
         }
 
+    }
+
+    public boolean isMoving() {
+        return keyH.upPressed || keyH.downPressed || keyH.leftPressed || keyH.rightPressed;
     }
 
     public void draw(Graphics2D g2) {
