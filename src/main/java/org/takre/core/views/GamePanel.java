@@ -1,18 +1,16 @@
 package org.takre.core.views;
 
 import org.takre.core.controllers.KeyControllers.KeyHandler;
-import org.takre.core.controllers.ThreadReadController;
 import org.takre.core.models.entity.Player;
 import org.takre.core.models.entity.RemotePlayer;
 
 import javax.swing.*;
 import java.awt.*;
-import java.io.DataOutputStream;
-import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import org.takre.core.network.WebSocketClient;
 
 public class GamePanel extends JPanel implements Runnable {
 
@@ -28,6 +26,7 @@ public class GamePanel extends JPanel implements Runnable {
     public int scaleY = screenHeight / (originalTileSize * maxScreenRow);
     public int tileSizeX;
     public int tileSizeY;
+    private WebSocketClient webSocketClient;
 
     // FPS
     int FPS = 60;
@@ -38,7 +37,7 @@ public class GamePanel extends JPanel implements Runnable {
     public KeyHandler getKeyH() {
         return keyH;
     }
-    Player player ;
+    Player player;
 
     public void setPlayer(Player player) {
         this.player = player;
@@ -50,7 +49,6 @@ public class GamePanel extends JPanel implements Runnable {
     public String getUserName() {
         return userName;
     }
-    private DataOutputStream out;
 
     // Hilo de juego
     Thread gameThread;
@@ -60,9 +58,8 @@ public class GamePanel extends JPanel implements Runnable {
     private Map<String, RemotePlayer> jugadoresRemotos = new HashMap<>();
 
     // Constructor
-    public GamePanel(String ip, int port, String userName) {
+    public GamePanel(String userName) {
         this.userName = userName;
-        connectToServer(ip, port);
 
         this.setPreferredSize(new Dimension(screenWidth, screenHeight));
         this.setBackground(Color.BLACK);
@@ -72,24 +69,6 @@ public class GamePanel extends JPanel implements Runnable {
 
         tileSizeX = screenWidth / maxScreenCol;
         tileSizeY = screenHeight / maxScreenRow;
-    }
-
-    private void connectToServer(String ip, int port) {
-        try {
-            Socket socket = new Socket(ip, port);
-            socket.setSendBufferSize(262144);
-            socket.setReceiveBufferSize(262144);
-            this.out = new DataOutputStream(socket.getOutputStream());
-
-            // Enviar nombre de usuario al servidor
-            this.out.writeUTF("USERNAME:" + this.userName);
-
-            // Iniciar hilo de lectura
-            ThreadReadController read = new ThreadReadController(socket, this);
-            read.start();
-        } catch (Exception e) {
-            System.err.println("Error al conectar al servidor: " + e.getMessage());
-        }
     }
 
     public void startGameThread() {
@@ -129,18 +108,13 @@ public class GamePanel extends JPanel implements Runnable {
     public void update() {
         player.update();
 
-        // Enviar posición del jugador al servidor
-        if (player.hasStateChanged()){
-            if (out != null) {
-                try {
-                    int x = player.x;
-                    int y = player.y;
-                    String direction = player.direction;
-                    String mensaje = "PLAYER:" + userName + "," + x + "," + y + "," + direction;
-                    out.writeUTF(mensaje);
-                } catch (Exception e) {
-                    System.out.println("Error al enviar datos del jugador: " + e.getMessage());
-                }
+        // Enviar posición constantemente mientras se esté moviendo
+        if (player.isMoving()) {
+            int x = player.x;
+            int y = player.y;
+            String direction = player.direction;
+            if (webSocketClient != null) {
+                webSocketClient.enviar(x + "," + y + "," + direction);
             }
         }
     }
@@ -154,6 +128,7 @@ public class GamePanel extends JPanel implements Runnable {
 
         for (RemotePlayer rp : jugadoresRemotos.values()) {
             rp.draw(g2);
+            System.out.println(jugadoresRemotos.values().size());
         }
 
         // Dibuja la lista de usuarios conectados en la esquina
@@ -218,5 +193,9 @@ public class GamePanel extends JPanel implements Runnable {
     // Método opcional si estás usando resize del JFrame
     public void resize(int newWidth, int newHeight) {
         // Por ahora no cambia tamaño interno, pero podrías escalar aquí
+    }
+
+    public void setWebSocketClient(WebSocketClient clienteWS) {
+        this.webSocketClient = clienteWS;
     }
 }
